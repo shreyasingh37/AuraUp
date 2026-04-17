@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg0: #fbfbf8;
+  --bg1: #f4f1ea;
+  --ink: #0e0f12;
+  --muted: rgba(14, 15, 18, 0.6);
+  --card: rgba(255, 255, 255, 0.82);
+  --ring: rgba(14, 15, 18, 0.14);
+  --accent: #0e0f12;
+  --accent2: #b7a387;
+}
+
+html,
+body {
+  height: 100%;
+  background: radial-gradient(1200px 800px at 50% -10%, var(--bg1), var(--bg0));
+  color: var(--ink);
+  font-family: theme("fontFamily.sans");
+}
+
+/* iOS safe area padding for bottom nav */
+.safe-bottom {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
+}
+
+.glass {
+  background: var(--card);
+  border: 1px solid var(--ring);
+  backdrop-filter: blur(10px);
+}
+
+.h1 {
+  font-family: theme("fontFamily.display");
+  letter-spacing: -0.02em;
+}
