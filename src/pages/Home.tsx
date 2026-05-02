@@ -4,17 +4,22 @@ import { todayLocalISO } from "../services/date";
 import Card from "../components/ui/Card";
 import HabitChecklist from "../components/HabitChecklist";
 import {
-  computeStreak,
-  getOrCreateHabitsForDate,
-  listHabits,
-  updateHabits,
-  type HabitRow,
-} from "../services/habits";
+  addUserHabit,
+  computeStreakFromLogs,
+  ensureDefaultHabits,
+  listLogsForDate,
+  listUserHabits,
+  upsertLog,
+  type HabitLog,
+  type UserHabit,
+  listLogs,
+} from "../services/customHabits";
 
 export default function HomePage() {
   const { user } = useAuth();
   const today = todayLocalISO();
-  const [todayHabits, setTodayHabits] = useState<HabitRow | null>(null);
+  const [habits, setHabits] = useState<UserHabit[]>([]);
+  const [logs, setLogs] = useState<HabitLog[]>([]);
   const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -27,11 +32,13 @@ export default function HomePage() {
       setLoading(true);
       setError(null);
       try {
-        const row = await getOrCreateHabitsForDate(user.id, today);
-        const all = await listHabits(user.id, 400);
-        const s = computeStreak(all, today);
+        const hs = await ensureDefaultHabits(user.id);
+        const todayLogs = await listLogsForDate(user.id, today);
+        const allLogs = await listLogs(user.id, 1200);
+        const s = computeStreakFromLogs(hs, allLogs, today);
         if (cancelled) return;
-        setTodayHabits(row);
+        setHabits(hs);
+        setLogs(todayLogs);
         setStreak(s);
       } catch (err: any) {
         if (!cancelled) setError(err?.message ?? "Failed to load habits.");
@@ -45,30 +52,47 @@ export default function HomePage() {
     };
   }, [user, today]);
 
-  const checklistValue = useMemo(() => {
-    return {
-      workout: todayHabits?.workout ?? false,
-      water: todayHabits?.water ?? false,
-      skincare: todayHabits?.skincare ?? false,
-    };
-  }, [todayHabits]);
+  const habitCount = useMemo(() => habits.length, [habits]);
 
-  async function onChecklistChange(next: typeof checklistValue) {
-    if (!todayHabits) return;
+  async function onToggle(habitId: string, completed: boolean) {
+    if (!user) return;
     setSaving(true);
-    const prev = todayHabits;
-    setTodayHabits({ ...todayHabits, ...next });
+    setError(null);
+    const prev = logs;
+    const optimistic = (() => {
+      const idx = logs.findIndex((l) => l.habit_id === habitId);
+      if (idx === -1) return [...logs, { id: "optimistic", user_id: user.id, habit_id: habitId, date: today, completed }];
+      const next = [...logs];
+      next[idx] = { ...next[idx], completed };
+      return next;
+    })();
+    setLogs(optimistic);
     try {
-      const updated = await updateHabits(todayHabits.id, next);
-      setTodayHabits(updated);
-      // Refresh streak quickly from last 400 days.
-      if (user) {
-        const all = await listHabits(user.id, 400);
-        setStreak(computeStreak(all, today));
-      }
+      await upsertLog(user.id, habitId, today, completed);
+      const freshToday = await listLogsForDate(user.id, today);
+      setLogs(freshToday);
+      const all = await listLogs(user.id, 1200);
+      setStreak(computeStreakFromLogs(habits, all, today));
     } catch (err: any) {
-      setTodayHabits(prev);
+      setLogs(prev);
       setError(err?.message ?? "Failed to save.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onAddHabit(name: string) {
+    if (!user) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await addUserHabit(user.id, name);
+      const hs = await listUserHabits(user.id);
+      setHabits(hs);
+      const all = await listLogs(user.id, 1200);
+      setStreak(computeStreakFromLogs(hs, all, today));
+    } catch (err: any) {
+      setError(err?.message ?? "Failed to add habit.");
     } finally {
       setSaving(false);
     }
@@ -101,7 +125,13 @@ export default function HomePage() {
           <div className="text-sm text-black/60">Loading your habits…</div>
         </Card>
       ) : (
-        <HabitChecklist value={checklistValue} onChange={onChecklistChange} disabled={saving} />
+        <HabitChecklist
+          habits={habits}
+          logs={logs}
+          onToggle={onToggle}
+          onAddHabit={onAddHabit}
+          disabled={saving}
+        />
       )}
 
       <Card className="flex items-center justify-between gap-4">
@@ -110,10 +140,9 @@ export default function HomePage() {
           <div className="text-xs text-black/60">Consistency beats intensity.</div>
         </div>
         <div className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-semibold">
-          3 habits
+          {habitCount} habits
         </div>
       </Card>
     </div>
   );
 }
-

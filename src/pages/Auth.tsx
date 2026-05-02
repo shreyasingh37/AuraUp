@@ -1,15 +1,16 @@
 import { useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { supabase } from "../services/supabaseClient";
+import { getSupabase } from "../services/supabaseClient";
 import useAuth from "../services/auth/useAuth";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
+import SupabaseConfigNotice from "../components/SupabaseConfigNotice";
 
 type Mode = "login" | "signup";
 
 export default function AuthPage() {
-  const { session } = useAuth();
+  const { session, configError } = useAuth();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,12 +22,14 @@ export default function AuthPage() {
   }, [mode]);
 
   if (session) return <Navigate to="/home" replace />;
+  if (configError) return <SupabaseConfigNotice />;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setBusy(true);
     try {
+      const supabase = getSupabase();
       if (mode === "login") {
         const { error: err } = await supabase.auth.signInWithPassword({ email, password });
         if (err) throw err;
@@ -107,4 +110,3 @@ export default function AuthPage() {
     </div>
   );
 }
-

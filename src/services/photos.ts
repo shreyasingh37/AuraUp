@@ -1,4 +1,4 @@
-import { supabase } from "./supabaseClient";
+import { getSupabase } from "./supabaseClient";
 
 export type PhotoRow = {
   id: string;
@@ -21,6 +21,7 @@ export function buildPhotoPath(userId: string, dateISO: string, ext: string) {
 }
 
 export async function getPhotoForDate(userId: string, date: string) {
+  const supabase = getSupabase();
   const { data, error } = await supabase
     .from("photos")
     .select("id,user_id,image_url,date")
@@ -32,6 +33,7 @@ export async function getPhotoForDate(userId: string, date: string) {
 }
 
 export async function listPhotos(userId: string, limit = 366) {
+  const supabase = getSupabase();
   const { data, error } = await supabase
     .from("photos")
     .select("id,user_id,image_url,date")
@@ -43,6 +45,7 @@ export async function listPhotos(userId: string, limit = 366) {
 }
 
 export async function uploadDailyPhoto(userId: string, dateISO: string, file: File) {
+  const supabase = getSupabase();
   const ext = pickImageExt(file);
   const path = buildPhotoPath(userId, dateISO, ext);
 
@@ -69,6 +72,7 @@ export async function uploadDailyPhoto(userId: string, dateISO: string, file: Fi
 }
 
 export async function createSignedPhotoUrl(storagePath: string, expiresIn = 60 * 60) {
+  const supabase = getSupabase();
   const { data, error } = await supabase.storage
     .from(PHOTOS_BUCKET)
     .createSignedUrl(storagePath, expiresIn);

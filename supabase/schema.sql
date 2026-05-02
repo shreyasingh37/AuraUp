@@ -73,6 +73,47 @@ to authenticated
 using (user_id = auth.uid())
 with check (user_id = auth.uid());
 
+-- 2b) Dynamic habits (recommended)
+-- Allows users to add their own habit list and track completion per-day.
+create table if not exists public.user_habits (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null check (char_length(name) between 1 and 40),
+  active boolean not null default true,
+  sort_order int not null default 100,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists user_habits_user_id_idx on public.user_habits (user_id);
+
+alter table public.user_habits enable row level security;
+drop policy if exists "Users manage their user habits" on public.user_habits;
+create policy "Users manage their user habits"
+on public.user_habits for all
+to authenticated
+using (user_id = auth.uid())
+with check (user_id = auth.uid());
+
+create table if not exists public.habit_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  habit_id uuid not null references public.user_habits(id) on delete cascade,
+  date date not null,
+  completed boolean not null default false,
+  created_at timestamptz not null default now(),
+  unique (habit_id, date)
+);
+
+create index if not exists habit_logs_user_id_date_idx on public.habit_logs (user_id, date);
+
+alter table public.habit_logs enable row level security;
+drop policy if exists "Users manage their habit logs" on public.habit_logs;
+create policy "Users manage their habit logs"
+on public.habit_logs for all
+to authenticated
+using (user_id = auth.uid())
+with check (user_id = auth.uid());
+
 -- 3) photos table
 create table if not exists public.photos (
   id uuid primary key default gen_random_uuid(),

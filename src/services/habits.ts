@@ -1,4 +1,4 @@
-import { supabase } from "./supabaseClient";
+import { getSupabase } from "./supabaseClient";
 
 export type HabitRow = {
   id: string;
@@ -10,6 +10,7 @@ export type HabitRow = {
 };
 
 export async function getOrCreateHabitsForDate(userId: string, date: string) {
+  const supabase = getSupabase();
   const { data: existing, error: selErr } = await supabase
     .from("habits")
     .select("id,user_id,date,workout,water,skincare")
@@ -45,6 +46,7 @@ export async function updateHabits(
   id: string,
   patch: Partial<Pick<HabitRow, "workout" | "water" | "skincare">>,
 ) {
+  const supabase = getSupabase();
   const { data, error } = await supabase
     .from("habits")
     .update(patch)
@@ -56,6 +58,7 @@ export async function updateHabits(
 }
 
 export async function listHabits(userId: string, limit = 400) {
+  const supabase = getSupabase();
   const { data, error } = await supabase
     .from("habits")
     .select("id,user_id,date,workout,water,skincare")

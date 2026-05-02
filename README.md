@@ -45,7 +45,9 @@ Client-side routing is handled via `vercel.json`.
 
 ## Notes
 
-- Daily habits live in `habits` (one row per day per user).
+- Habits:
+  - Legacy: `habits` (fixed 3 habits).
+  - Recommended: `user_habits` + `habit_logs` (supports custom habits). The app UI uses the recommended tables.
 - Daily photos live in `photos` and the image file is stored in Supabase Storage under `photos/<user_id>/...`.
 - The “Share” image is generated on-device (no external APIs).
 
@@ -54,4 +56,3 @@ Client-side routing is handled via `vercel.json`.
 - AI “future glow” preview
 - Video progress generation
 - Advanced analytics
-

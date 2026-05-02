@@ -4,8 +4,14 @@ import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import EmptyState from "../components/EmptyState";
 import ShareModal from "../components/ShareModal";
-import { computeCompletionPercent, listHabits } from "../services/habits";
 import { createSignedPhotoUrl, listPhotos, type PhotoRow } from "../services/photos";
+import {
+  computeOverallCompletionPercent,
+  ensureDefaultHabits,
+  listLogs,
+  type HabitLog,
+  type UserHabit,
+} from "../services/customHabits";
 
 function pickBeforeLatest(photos: PhotoRow[]) {
   if (photos.length === 0) return { before: null, latest: null };
@@ -17,6 +23,8 @@ function pickBeforeLatest(photos: PhotoRow[]) {
 export default function ProgressPage() {
   const { user } = useAuth();
   const [photos, setPhotos] = useState<PhotoRow[]>([]);
+  const [habits, setHabits] = useState<UserHabit[]>([]);
+  const [logs, setLogs] = useState<HabitLog[]>([]);
   const [beforeUrl, setBeforeUrl] = useState<string | null>(null);
   const [latestUrl, setLatestUrl] = useState<string | null>(null);
   const [daysActive, setDaysActive] = useState(0);
@@ -30,14 +38,20 @@ export default function ProgressPage() {
       if (!user) return;
       setError(null);
       try {
-        const [p, h] = await Promise.all([listPhotos(user.id, 366), listHabits(user.id, 800)]);
+        const [p, hs, ls] = await Promise.all([
+          listPhotos(user.id, 366),
+          ensureDefaultHabits(user.id),
+          listLogs(user.id, 2000),
+        ]);
         if (cancelled) return;
         setPhotos(p);
-        setHabitPercent(computeCompletionPercent(h));
+        setHabits(hs);
+        setLogs(ls);
+        setHabitPercent(computeOverallCompletionPercent(hs, ls));
 
         const dateSet = new Set<string>();
         for (const row of p) dateSet.add(row.date);
-        for (const row of h) dateSet.add(row.date);
+        for (const row of ls) dateSet.add(row.date);
         setDaysActive(dateSet.size);
 
         const { before, latest } = pickBeforeLatest(p);
@@ -129,6 +143,9 @@ export default function ProgressPage() {
         <Card>
           <div className="text-xs text-black/60">Habit completion</div>
           <div className="h1 mt-1 text-3xl">{habitPercent}%</div>
+          <div className="mt-1 text-[11px] text-black/60">
+            Based on {habits.length} habits · {logs.length} check-ins
+          </div>
         </Card>
       </div>
 
