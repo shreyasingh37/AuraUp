@@ -108,7 +108,33 @@ export default function HomePage() {
           </div>
           <div className="text-right">
             <div className="text-xs text-black/60">Streak</div>
-            <div className="h1 text-2xl">{streak}d</div>
+            <div className="flex items-center justify-end gap-2">
+              <span
+                className="grid h-8 w-8 place-items-center rounded-full bg-black text-white shadow-soft"
+                aria-hidden="true"
+                title="Streak"
+              >
+                {/* flame icon */}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M13.6 2.6c.3 3-1 4.6-2.4 6.1-1.3 1.4-2.7 2.9-2.6 5.7.1 2.8 2.2 4.8 5 4.8 2.7 0 5-2.1 5-5 0-2.1-1-3.4-2-4.8-.9-1.2-1.9-2.4-2-4.8Z"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M8.3 13.1c-.8 1.2-1.3 2.4-1.3 3.8 0 2.9 2.3 5.1 5 5.1 2.7 0 5-2.2 5-5.1 0-1.3-.4-2.4-1.2-3.4"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </span>
+              <div className="text-right">
+                <div className="h1 text-2xl leading-none">Day {streak}</div>
+                <div className="text-[11px] text-black/60 leading-none">current streak</div>
+              </div>
+            </div>
           </div>
         </div>
       </Card>
